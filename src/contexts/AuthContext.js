@@ -15,19 +15,14 @@ export const AuthProvider = ({ children }) => {
     // Kiểm tra authentication khi component mount
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const userData = await authService.getCurrentUser();
-          if (userData) {
-            setUser(userData);
-          } else {
-            // Nếu không lấy được user data, xóa token
-            localStorage.removeItem('token');
-          }
-        } catch (error) {
-          console.error('Auth check error:', error);
-          localStorage.removeItem('token');
-        }
+      const userDetails = authService.getUserDetails();
+      
+      if (token && userDetails) {
+        setUser(userDetails);
+      } else {
+        // Nếu không có token hoặc userDetails, xóa hết data
+        localStorage.removeItem('token');
+        localStorage.removeItem('userDetails');
       }
       setLoading(false);
     };
@@ -37,21 +32,20 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      // Gọi API login để lấy token
-      const token = await authService.login(username, password);
+      // Gọi API login để lấy token và userDetails
+      const { userDetails } = await authService.login(username, password);
       
-      // Lấy thông tin user từ token
-      const userData = await authService.getCurrentUser();
-      if (!userData) {
+      if (!userDetails) {
         throw new Error('Không thể lấy thông tin người dùng');
       }
       
-      setUser(userData);
+      setUser(userDetails);
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      // Đảm bảo xóa token nếu có lỗi
+      // Đảm bảo xóa hết data nếu có lỗi
       localStorage.removeItem('token');
+      localStorage.removeItem('userDetails');
       throw error;
     }
   };

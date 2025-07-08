@@ -31,16 +31,18 @@ export const login = async (username, password) => {
       throw new Error('Đăng nhập thất bại');
     }
 
-    // Lấy token từ data
-    const token = result.data?.token;
-    if (!token) {
+    // Lấy token và userDetails từ data
+    const { token, userDetails } = result.data;
+    if (!token || !userDetails) {
       console.error('Login response:', result);
-      throw new Error('Token không hợp lệ');
+      throw new Error('Dữ liệu đăng nhập không hợp lệ');
     }
 
-    // Lưu token
+    // Lưu token và userDetails
     localStorage.setItem('token', token);
-    return token;
+    localStorage.setItem('userDetails', JSON.stringify(userDetails));
+    
+    return { token, userDetails };
   } catch (error) {
     console.error('Login error:', error);
     throw error;
@@ -75,41 +77,15 @@ export const forgotPassword = async (email, newPassword) => {
 
 export const getCurrentUser = async () => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const userDetails = getUserDetails();
+    if (!userDetails) {
       return null;
     }
-
-    const response = await fetch(`${API_URL}/Auth/me`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        return null;
-      }
-      throw new Error(result.message || 'Không thể lấy thông tin người dùng');
-    }
-
-    // Kiểm tra business status từ API
-    if (!result.status || result.statusCode !== 200) {
-      if (result.errors && result.errors.length > 0) {
-        throw new Error(result.errors.join(', '));
-      }
-      throw new Error('Không thể lấy thông tin người dùng');
-    }
-
-    return result.data;
+    return userDetails;
   } catch (error) {
     console.error('Get current user error:', error);
     localStorage.removeItem('token');
+    localStorage.removeItem('userDetails');
     return null;
   }
 };
@@ -135,7 +111,14 @@ export const updateUserProfile = async (userData) => {
       throw new Error(data.message || 'Cập nhật thông tin thất bại');
     }
 
-    return await response.json();
+    const result = await response.json();
+    
+    // Cập nhật userDetails trong localStorage
+    if (result.data) {
+      localStorage.setItem('userDetails', JSON.stringify(result.data));
+    }
+
+    return result;
   } catch (error) {
     console.error('Update profile error:', error);
     throw error;
@@ -144,14 +127,20 @@ export const updateUserProfile = async (userData) => {
 
 export const logout = () => {
   localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.removeItem('userDetails');
 };
 
 export const getToken = () => {
   return localStorage.getItem('token');
 };
 
+export const getUserDetails = () => {
+  const userDetailsStr = localStorage.getItem('userDetails');
+  return userDetailsStr ? JSON.parse(userDetailsStr) : null;
+};
+
 export const isAuthenticated = () => {
   const token = getToken();
-  return !!token;
+  const userDetails = getUserDetails();
+  return !!(token && userDetails);
 };

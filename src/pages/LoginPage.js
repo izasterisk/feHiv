@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, user } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -13,10 +13,30 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
+    if (isAuthenticated && user) {
+      // Chuyển hướng dựa vào role của user
+      switch (user.role?.toLowerCase()) {
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'doctor':
+          navigate('/doctor/dashboard');
+          break;
+        case 'patient':
+          navigate('/patient/dashboard');
+          break;
+        case 'staff':
+          navigate('/staff/dashboard');
+          break;
+        case 'manager':
+          navigate('/manager/dashboard');
+          break;
+        default:
+          navigate('/');
+          break;
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +53,7 @@ const LoginPage = () => {
 
     try {
       await login(formData.username, formData.password);
-      navigate('/');
+      // Không cần navigate ở đây vì useEffect sẽ xử lý
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');

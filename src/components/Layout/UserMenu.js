@@ -12,7 +12,7 @@ const UserMenu = ({ user, onLogout }) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false);
       }
-    };
+    }; 
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
