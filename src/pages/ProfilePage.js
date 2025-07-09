@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 const DEFAULT_AVATAR = 'https://cdn.sforum.vn/sforum/wp-content/uploads/2023/10/avatar-trang-4.jpg';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, updateUserInfo } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -169,6 +169,18 @@ const ProfilePage = () => {
         // Cập nhật state với dữ liệu từ server
         setProfileData(responseData.data);
         setEditedData(responseData.data);
+        
+        // Cập nhật thông tin user trong AuthContext
+        updateUserInfo({
+          ...user,
+          fullName: responseData.data.fullName,
+          phoneNumber: responseData.data.phoneNumber,
+          email: responseData.data.email,
+          gender: responseData.data.gender,
+          address: responseData.data.address,
+          dateOfBirth: responseData.data.dateOfBirth
+        });
+        
         setUpdateSuccess(true);
         setIsEditing(false);
       } else {

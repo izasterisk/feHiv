@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import VerifyPage from './pages/VerifyPage';
 import ProfilePage from './pages/ProfilePage';
 import AppointmentsPage from './pages/AppointmentsPage';
+import AppointmentListPage from './pages/AppointmentListPage';
 import TestsPage from './pages/TestsPage';
 import TreatmentsPage from './pages/TreatmentsPage';
 import ArticlesPage from './pages/ArticlesPage';
@@ -14,6 +15,8 @@ import PrivateRoute from './components/PrivateRoute';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 function App() {
@@ -50,10 +53,18 @@ function App() {
                         }
                       />
                       <Route
-                        path="/appointments/*"
+                        path="/appointments/create"
                         element={
                           <PrivateRoute>
                             <AppointmentsPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/appointments/list"
+                        element={
+                          <PrivateRoute>
+                            <AppointmentListPage />
                           </PrivateRoute>
                         }
                       />
@@ -80,6 +91,18 @@ function App() {
               }
             />
           </Routes>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
         </div>
       </AuthProvider>
     </Router>

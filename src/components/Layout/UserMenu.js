@@ -67,13 +67,22 @@ const UserMenu = ({ user, onLogout }) => {
             Thông tin cá nhân
           </Link>
           {/* Chỉ hiển thị link đặt lịch cho patient */}
-          {user?.role === 'Patient' && (
+          {user?.userRole === 'Patient' && (
             <Link
               to="/appointments/create"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
               onClick={() => setIsOpen(false)}
             >
               Tạo lịch hẹn
+            </Link>
+          )}
+          {user?.userRole === 'Patient' && (
+            <Link
+              to="/appointments/list"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Danh sách lịch hẹn
             </Link>
           )}
           <button

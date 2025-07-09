@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { getToken } from '../services/authService';
+import { getToken, getUserRole } from '../services/authService';
+import { toast } from 'react-toastify';
 
 const AppointmentsPage = () => {
   const [date, setDate] = useState('');
@@ -10,36 +11,53 @@ const AppointmentsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [appointmentType, setAppointmentType] = useState('appointment'); // 'appointment' or 'medication'
+  const [testTypes, setTestTypes] = useState([]);
+  const [selectedTestType, setSelectedTestType] = useState(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Kiểm tra role khi component mount
-    const checkUserRole = async () => {
+    const checkUserRole = () => {
       const token = getToken();
+      const userRole = getUserRole();
+
       if (!token) {
         navigate('/login');
         return;
       }
 
-      try {
-        const response = await axios.get('http://localhost:8080/api/User/GetUserInfo', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.data.status && response.data.data.role !== 'Patient') {
-          // Nếu không phải patient, chuyển hướng về trang chủ
-          navigate('/');
-        }
-      } catch (err) {
-        console.error('Error checking user role:', err);
-        navigate('/login');
+      if (userRole?.toLowerCase() !== 'patient') {
+        // Nếu không phải patient, chuyển hướng về trang chủ
+        navigate('/');
+        return;
       }
     };
 
     checkUserRole();
   }, [navigate]);
+
+  useEffect(() => {
+    // Fetch test types when component mounts
+    const fetchTestTypes = async () => {
+      const token = getToken();
+      try {
+        const response = await axios.get('http://localhost:8080/api/TestType/GetAll', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.data.status) {
+          setTestTypes(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching test types:', error);
+      }
+    };
+
+    fetchTestTypes();
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -132,6 +150,153 @@ const AppointmentsPage = () => {
     }
   };
 
+  const handleBookAppointment = async () => {
+    try {
+      const token = getToken();
+      const userDetails = JSON.parse(localStorage.getItem('userDetails'));
+      
+      // Kiểm tra tài khoản đã xác thực chưa
+      if (!userDetails?.isVerified) {
+        toast.error('Vui lòng xác thực tài khoản trước khi đặt lịch', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      // Kiểm tra ngày đặt lịch không được ở quá khứ
+      const appointmentDateTime = new Date(date + 'T' + time);
+      const now = new Date();
+      if (appointmentDateTime < now) {
+        toast.error('Không thể đặt lịch hẹn trong quá khứ', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      // Format date to match DateOnly (YYYY-MM-DD)
+      const formattedDate = date;
+
+      // Format time to match TimeOnly (HH:mm:ss)
+      const formattedTime = time + ':00';
+
+      const appointmentData = {
+        patientId: userDetails?.patientId,
+        doctorId: selectedDoctor,
+        appointmentDate: formattedDate,
+        appointmentTime: formattedTime,
+        appointmentType: appointmentType === 'medication' ? 'Medication' : 'Appointment',
+        testTypeId: appointmentType === 'medication' ? selectedTestType : null,
+        isAnonymous: isAnonymous || false
+      };
+
+      // Debug log
+      console.log('Sending appointment data:', appointmentData);
+
+      // Validate required fields
+      if (!appointmentData.patientId) {
+        toast.error('Không thể xác định thông tin bệnh nhân. Vui lòng đăng nhập lại.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        navigate('/login');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      const response = await axios.post(
+        'http://localhost:8080/api/Appointment/Create',
+        appointmentData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Debug log
+      console.log('API Response:', response.data);
+
+      if (response.data.status) {
+        // Hiển thị toast thành công và đợi nó đóng trước khi chuyển hướng
+        await new Promise(resolve => {
+          toast.success('Đặt lịch thành công! Vui lòng chờ xác nhận từ bác sĩ.', {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            onClose: resolve
+          });
+        });
+        
+        // Chờ một chút để người dùng thấy thông báo
+        setTimeout(() => {
+          navigate('/appointments/list');
+        }, 2000);
+      } else {
+        toast.error(response.data.message || 'Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error details:', error.response || error);
+
+      if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+        toast.error(error.response.data.errors.join(', '), {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else {
+        toast.error('Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12">
       <div className="container mx-auto px-4">
@@ -160,7 +325,7 @@ const AppointmentsPage = () => {
                     onChange={(e) => setDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                   />
                 </div>
               </div>
@@ -185,18 +350,38 @@ const AppointmentsPage = () => {
                       const value = e.target.value;
                       if (value) {
                         const [hours, minutes] = value.split(':').map(Number);
-                        if (hours >= 8 && hours <= 18 && minutes >= 0 && minutes <= 59) {
-                          const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes ? minutes.toString().padStart(2, '0') : '00'}`;
+                        if (hours >= 8 && hours <= 18 && minutes === 0) {
+                          const formattedTime = `${hours.toString().padStart(2, '0')}:00`;
                           setTime(formattedTime);
+                          setError(null); // Clear any existing error
                         } else {
                           setTime('');
-                          setError('Vui lòng nhập giờ từ 08:00 đến 18:00');
+                          if (minutes !== 0) {
+                            toast.error('Vui lòng chỉ nhập giờ đúng định dạngdạng Ví dụ: 08:00, 09:00, 10:00...', {
+                              position: "top-right",
+                              autoClose: 5000,
+                              hideProgressBar: false,
+                              closeOnClick: true,
+                              pauseOnHover: true,
+                              draggable: true,
+                            });
+                          } else {
+                            setError('Vui lòng nhập giờ từ 08:00 đến 18:00');
+                            toast.error('Vui lòng nhập giờ từ 08:00 đến 18:00. Chúng tôi chỉ làm việc trong giờ hành chính.', {
+                              position: "top-right",
+                              autoClose: 5000,
+                              hideProgressBar: false,
+                              closeOnClick: true,
+                              pauseOnHover: true,
+                              draggable: true,
+                            });
+                          }
                         }
                       }
                     }}
                     placeholder="08:00"
-                    pattern="([0-1][0-9]|2[0-3]):[0-5][0-9]"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    pattern="([0-1][0-9]|2[0-3]):00"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -205,7 +390,7 @@ const AppointmentsPage = () => {
                     </svg>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">Thời gian từ 08:00 - 18:00</p>
+                <p className="text-sm text-gray-500 mt-1">Thời gian từ 08:00 - 18:00 (chỉ nhập giờ tròn)</p>
               </div>
             </div>
 
@@ -303,18 +488,98 @@ const AppointmentsPage = () => {
               ))}
             </div>
 
-            {/* Nút tiếp tục */}
+            {/* Appointment Type Selection */}
             {selectedDoctor && (
-              <div className="mt-10 flex justify-center">
-                <button
-                  className="px-10 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white text-lg font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                  onClick={() => {
-                    // TODO: Implement appointment booking
-                    console.log('Proceed with booking for doctor:', selectedDoctor);
-                  }}
-                >
-                  Tiếp tục đặt lịch
-                </button>
+              <div className="mt-10 space-y-8">
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn loại lịch hẹn</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      className={`p-4 rounded-xl font-semibold text-base transition-all duration-300 ${
+                        appointmentType === 'appointment'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      onClick={() => setAppointmentType('appointment')}
+                    >
+                      Khám bệnh
+                    </button>
+                    <button
+                      className={`p-4 rounded-xl font-semibold text-base transition-all duration-300 ${
+                        appointmentType === 'medication'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      onClick={() => setAppointmentType('medication')}
+                    >
+                      Xét nghiệm
+                    </button>
+                  </div>
+                </div>
+
+                {/* Test Type Selection for Medication */}
+                {appointmentType === 'medication' && (
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6">Chọn loại xét nghiệm</h3>
+                    <div className="grid gap-4">
+                      {testTypes.map((testType) => (
+                        <button
+                          key={testType.testTypeId}
+                          className={`p-4 rounded-xl font-semibold text-base transition-all duration-300 text-left ${
+                            selectedTestType === testType.testTypeId
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                          onClick={() => setSelectedTestType(testType.testTypeId)}
+                        >
+                          {testType.testTypeName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Anonymous Booking Option */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Đặt lịch ẩn danh</h3>
+                      <p className="text-gray-600 mt-2">
+                        Thông tin của bạn sẽ được bảo mật khi đặt lịch ẩn danh
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={isAnonymous}
+                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                      />
+                      <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Book Appointment Button */}
+                <div className="flex justify-center">
+                  <button
+                    className="px-10 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white text-lg font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleBookAppointment}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Đang xử lý...</span>
+                      </div>
+                    ) : (
+                      'Xác nhận đặt lịch'
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -38,14 +38,28 @@ export const login = async (username, password) => {
       throw new Error('Dữ liệu đăng nhập không hợp lệ');
     }
 
-    // Lưu token và userDetails
+    // Parse JWT token để lấy role
+    const tokenData = parseJwt(token);
+    const userRole = tokenData?.role;
+
+    // Lưu token, userDetails và userRole
     localStorage.setItem('token', token);
     localStorage.setItem('userDetails', JSON.stringify(userDetails));
+    localStorage.setItem('userRole', userRole);
     
-    return { token, userDetails };
+    return { token, userDetails, userRole };
   } catch (error) {
     console.error('Login error:', error);
     throw error;
+  }
+};
+
+// Utility function to parse JWT token
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
   }
 };
 
@@ -86,6 +100,7 @@ export const getCurrentUser = async () => {
     console.error('Get current user error:', error);
     localStorage.removeItem('token');
     localStorage.removeItem('userDetails');
+    localStorage.removeItem('userRole');
     return null;
   }
 };
@@ -128,6 +143,7 @@ export const updateUserProfile = async (userData) => {
 export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('userDetails');
+  localStorage.removeItem('userRole');
 };
 
 export const getToken = () => {
@@ -137,6 +153,10 @@ export const getToken = () => {
 export const getUserDetails = () => {
   const userDetailsStr = localStorage.getItem('userDetails');
   return userDetailsStr ? JSON.parse(userDetailsStr) : null;
+};
+
+export const getUserRole = () => {
+  return localStorage.getItem('userRole');
 };
 
 export const isAuthenticated = () => {

@@ -59,11 +59,22 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
+  const updateUserInfo = (newUserInfo) => {
+    // Cập nhật thông tin người dùng trong localStorage
+    const currentUserDetails = authService.getUserDetails();
+    const updatedUserDetails = { ...currentUserDetails, ...newUserInfo };
+    localStorage.setItem('userDetails', JSON.stringify(updatedUserDetails));
+    
+    // Cập nhật state
+    setUser(updatedUserDetails);
+  };
+
   const value = {
     user,
     loading,
     login,
     logout,
+    updateUserInfo,
     isAuthenticated: !!user
   };
 
