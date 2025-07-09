@@ -5,22 +5,6 @@ import UserMenu from './UserMenu';
 
 const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const location = useLocation();
-
-  const navigationItems = [
-    { name: 'Trang chủ', path: '/' },
-    { name: 'Đặt lịch hẹn', path: '/appointments' },
-    { name: 'Xét nghiệm', path: '/tests' },
-    { name: 'Điều trị', path: '/treatments' },
-    { name: 'Bài viết', path: '/articles' },
-  ];
-
-  const isActivePath = (path) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
-  };
 
   return (
     <header className="bg-white shadow-md">
@@ -39,25 +23,6 @@ const Header = () => {
                 <span className="block text-sm text-gray-500">Life Healthcare</span>
               </div>
             </Link>
-          </div>
-
-          {/* Navigation */}
-          <div className="flex-1 flex items-center justify-center px-2 lg:ml-6 lg:justify-center">
-            <nav className="flex space-x-4">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    isActivePath(item.path)
-                      ? 'text-red-600 bg-red-50'
-                      : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
           </div>
 
           {/* User Menu / Auth Buttons */}

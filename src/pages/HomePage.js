@@ -63,13 +63,7 @@ const HomePage = () => {
           </p>
           <div className="flex justify-center gap-6">
             <Link 
-              to="/appointments" 
-              className="bg-white text-red-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300"
-            >
-              Đặt lịch hẹn
-            </Link>
-            <Link 
-              to="/about" 
+              to="/#" 
               className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-red-600 transition duration-300"
             >
               Tìm hiểu thêm

@@ -66,13 +66,16 @@ const UserMenu = ({ user, onLogout }) => {
           >
             Thông tin cá nhân
           </Link>
-          <Link
-            to="/appointments"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
-            onClick={() => setIsOpen(false)}
-          >
-            Lịch hẹn của tôi
-          </Link>
+          {/* Chỉ hiển thị link đặt lịch cho patient */}
+          {user?.role === 'Patient' && (
+            <Link
+              to="/appointments/create"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Tạo lịch hẹn
+            </Link>
+          )}
           <button
             onClick={() => {
               setIsOpen(false);

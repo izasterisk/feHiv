@@ -13,6 +13,24 @@ const ProfilePage = () => {
   const [editedData, setEditedData] = useState(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
+  // Utility function to parse JWT token
+  const parseJwt = (token) => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Hàm chuyển đổi giới tính sang tiếng Việt
+  const getGenderInVietnamese = (gender) => {
+    const genderMap = {
+      'Male': 'Nam',
+      'Female': 'Nữ'
+    };
+    return genderMap[gender] || gender;
+  };
+
   useEffect(() => {
     if (profileData && !editedData) {
       // Initialize editedData with all fields from profileData
@@ -26,7 +44,8 @@ const ProfilePage = () => {
       };
 
       // Add role-specific fields
-      const userRole = (user.userRole || localStorage.getItem('userRole'))?.toLowerCase()?.trim();
+      const token = localStorage.getItem('token');
+      const userRole = parseJwt(token)?.role?.toLowerCase();
       
       switch (userRole) {
         case 'doctor':
@@ -54,6 +73,28 @@ const ProfilePage = () => {
     }));
   };
 
+  const getRoleName = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return 'Không xác định';
+
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const role = tokenData?.role?.toLowerCase();
+      
+      const names = {
+        'admin': 'Quản trị viên',
+        'doctor': 'Bác sĩ',
+        'patient': 'Bệnh nhân',
+        'staff': 'Nhân viên',
+        'manager': 'Quản lý'
+      };
+
+      return names[role] || 'Không xác định';
+    } catch (e) {
+      return 'Không xác định';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -62,56 +103,50 @@ const ProfilePage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const userRole = (user.userRole || localStorage.getItem('userRole'))?.toLowerCase()?.trim();
+      const tokenData = parseJwt(token);
+      const userRole = tokenData?.role?.toLowerCase();
+
+      if (!userRole) {
+        throw new Error('Không xác định được vai trò người dùng');
+      }
       
       let endpoint = `/api/${userRole}/Update`;
       
       // Format date properly
       const formattedDate = editedData.dateOfBirth ? new Date(editedData.dateOfBirth).toISOString().split('T')[0] : null;
       
-      // Only include fields that have actually changed
+      // Base update data
       let updateData = {
         userId: parseInt(user.userId),
-        username: profileData.username // Required field
+        username: profileData.username,
+        phoneNumber: editedData.phoneNumber,
+        fullName: editedData.fullName,
+        dateOfBirth: formattedDate,
+        gender: editedData.gender,
+        address: editedData.address,
+        isActive: true
       };
 
-      // Compare and add only changed fields
-      if (editedData.email && editedData.email !== profileData.email) updateData.email = editedData.email;
-      if (editedData.phoneNumber && editedData.phoneNumber !== profileData.phoneNumber) updateData.phoneNumber = editedData.phoneNumber;
-      if (editedData.fullName && editedData.fullName !== profileData.fullName) updateData.fullName = editedData.fullName;
-      if (formattedDate && formattedDate !== profileData.dateOfBirth?.split('T')[0]) updateData.dateOfBirth = formattedDate;
-      if (editedData.gender && editedData.gender !== profileData.gender) updateData.gender = editedData.gender;
-      if (editedData.address && editedData.address !== profileData.address) updateData.address = editedData.address;
+      // Chỉ thêm email vào request nếu nó khác với email hiện tại
+      if (editedData.email !== profileData.email) {
+        updateData.email = editedData.email;
+      }
 
-      // Add role-specific IDs and fields
+      // Add role-specific IDs
       switch (userRole) {
         case 'doctor':
-          updateData.doctorId = profileData.doctorId;
-          if (editedData.doctorImage !== profileData.doctorImage) updateData.doctorImage = editedData.doctorImage;
-          if (editedData.bio !== profileData.bio) updateData.bio = editedData.bio;
+          updateData.doctorId = user.doctorId;
+          updateData.doctorImage = profileData.doctorImage || '';
+          updateData.bio = profileData.bio || '';
           break;
         case 'patient':
-          updateData.patientId = profileData.patientId;
-          if (editedData.bloodType !== profileData.bloodType) updateData.bloodType = editedData.bloodType;
-          if (editedData.isPregnant !== profileData.isPregnant) updateData.isPregnant = editedData.isPregnant;
-          if (editedData.specialNotes !== profileData.specialNotes) updateData.specialNotes = editedData.specialNotes;
-          break;
-        case 'admin':
-          updateData.adminId = profileData.adminId;
-          break;
-        case 'staff':
-          updateData.staffId = profileData.staffId;
-          break;
-        case 'manager':
-          updateData.managerId = profileData.managerId;
+          updateData.patientId = user.patientId;
+          updateData.bloodType = profileData.bloodType || '';
+          updateData.isPregnant = profileData.isPregnant || false;
+          updateData.specialNotes = profileData.specialNotes || '';
           break;
       }
 
-      // Add isActive field
-      updateData.isActive = true;
-
-      console.log('Profile Data:', profileData);
-      console.log('Edited Data:', editedData);
       console.log('Update Data to be sent:', updateData);
 
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080'}${endpoint}`, {
@@ -130,9 +165,10 @@ const ProfilePage = () => {
         throw new Error(responseData.message || responseData.errors?.[0] || 'Cập nhật thông tin thất bại');
       }
 
-      // Update the profile data with the response data
       if (responseData.data) {
+        // Cập nhật state với dữ liệu từ server
         setProfileData(responseData.data);
+        setEditedData(responseData.data);
         setUpdateSuccess(true);
         setIsEditing(false);
       } else {
@@ -162,11 +198,12 @@ const ProfilePage = () => {
           return;
         }
 
-        const userRole = (user.userRole || localStorage.getItem('userRole'))?.toLowerCase()?.trim();
-        
-        const validRoles = ['admin', 'doctor', 'patient', 'staff', 'manager'];
-        if (!validRoles.includes(userRole)) {
-          setError(`Role không hợp lệ: ${userRole}`);
+        // Parse JWT token để lấy thông tin role
+        const tokenData = parseJwt(token);
+        const userRole = tokenData?.role?.toLowerCase();
+
+        if (!userRole) {
+          setError('Không xác định được vai trò người dùng');
           setLoading(false);
           return;
         }
@@ -179,7 +216,21 @@ const ProfilePage = () => {
           'manager': 'Manager'
         };
 
-        const endpoint = `/api/${roleEndpoints[userRole]}/GetByID/${user.userId}`;
+        // Xác định ID phù hợp cho từng role
+        let endpointId;
+        switch (userRole) {
+          case 'doctor':
+            endpointId = user.doctorId;
+            break;
+          case 'patient':
+            endpointId = user.patientId;
+            break;
+          default:
+            // Với admin, staff, manager sử dụng userId
+            endpointId = user.userId;
+        }
+
+        const endpoint = `/api/${roleEndpoints[userRole]}/GetByID/${endpointId}`;
 
         const response = await fetch(`http://localhost:8080${endpoint}`, {
           headers: {
@@ -251,19 +302,8 @@ const ProfilePage = () => {
     );
   }
 
-  const getRoleName = (role) => {
-    const names = {
-      admin: 'Quản trị viên',
-      doctor: 'Bác sĩ',
-      patient: 'Bệnh nhân',
-      staff: 'Nhân viên',
-      manager: 'Quản lý'
-    };
-    return names[role?.toLowerCase()] || role;
-  };
-
   const renderUpdateForm = () => {
-    const userRole = (user.userRole || localStorage.getItem('userRole'))?.toLowerCase()?.trim();
+    const userRole = parseJwt(localStorage.getItem('token'))?.role?.toLowerCase();
 
     return (
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -274,6 +314,18 @@ const ProfilePage = () => {
               type="text"
               name="fullName"
               value={editedData?.fullName || ''}
+              onChange={handleInputChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={editedData?.email || ''}
               onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
               required
@@ -330,84 +382,6 @@ const ProfilePage = () => {
               required
             />
           </div>
-
-          {/* Role-specific fields */}
-          {(userRole === 'admin' || userRole === 'manager' || userRole === 'staff') && (
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={editedData?.email || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                required
-              />
-            </div>
-          )}
-
-          {userRole === 'doctor' && (
-            <>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Ảnh đại diện</label>
-                <input
-                  type="text"
-                  name="doctorImage"
-                  value={editedData?.doctorImage || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Tiểu sử</label>
-                <textarea
-                  name="bio"
-                  value={editedData?.bio || ''}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-            </>
-          )}
-
-          {userRole === 'patient' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nhóm máu</label>
-                <input
-                  type="text"
-                  name="bloodType"
-                  value={editedData?.bloodType || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Tình trạng thai sản</label>
-                <div className="mt-2">
-                  <input
-                    type="checkbox"
-                    name="isPregnant"
-                    checked={editedData?.isPregnant || false}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">Đang mang thai</span>
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Ghi chú đặc biệt</label>
-                <textarea
-                  name="specialNotes"
-                  value={editedData?.specialNotes || ''}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-            </>
-          )}
         </div>
 
         <div className="flex justify-end space-x-3">
@@ -453,7 +427,7 @@ const ProfilePage = () => {
                   <h1 className="text-3xl font-bold text-white">{profileData.username}</h1>
                   <div className="flex items-center mt-2">
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
-                      {getRoleName(user.userRole)}
+                      {getRoleName()}
                     </span>
                   </div>
                 </div>
@@ -536,7 +510,7 @@ const ProfilePage = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Giới tính</p>
-                      <p className="text-base text-gray-900">{profileData.gender}</p>
+                      <p className="text-base text-gray-900">{getGenderInVietnamese(profileData.gender)}</p>
                     </div>
                   </div>
                 </div>
