@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { getToken, getUserRole } from '../services/authService';
+import { getToken, isTokenExpired, handleUnauthorized, getUserRole, getUserDetails } from '../services/authService';
 import { toast } from 'react-toastify';
 
 const AppointmentsPage = () => {
@@ -63,14 +63,16 @@ const AppointmentsPage = () => {
     if (!dateString) return '';
     const date = new Date(dateString);
     const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
   const formatTime = (timeString) => {
     if (!timeString) return '';
-    return `${timeString}:00`;
+    // Ensure time is in HH:mm:00 format
+    const [hours, minutes] = timeString.split(':');
+    return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
   };
 
   const fetchDoctorDetails = async (doctorId) => {
@@ -150,74 +152,43 @@ const AppointmentsPage = () => {
     }
   };
 
-  const handleBookAppointment = async () => {
+  const handleBookAppointment = async (e) => {
+    e.preventDefault();
+    
+    if (!date || !time || !selectedDoctor) {
+      toast.error('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
     try {
       const token = getToken();
-      const userDetails = JSON.parse(localStorage.getItem('userDetails'));
-      
-      // Kiểm tra tài khoản đã xác thực chưa
-      if (!userDetails?.isVerified) {
-        toast.error('Vui lòng xác thực tài khoản trước khi đặt lịch', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+      if (!token || isTokenExpired(token)) {
+        handleUnauthorized(navigate);
         return;
       }
 
-      // Kiểm tra ngày đặt lịch không được ở quá khứ
-      const appointmentDateTime = new Date(date + 'T' + time);
-      const now = new Date();
-      if (appointmentDateTime < now) {
-        toast.error('Không thể đặt lịch hẹn trong quá khứ', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-        return;
-      }
-
-      // Format date to match DateOnly (YYYY-MM-DD)
-      const formattedDate = date;
-
-      // Format time to match TimeOnly (HH:mm:ss)
-      const formattedTime = time + ':00';
-
-      const appointmentData = {
-        patientId: userDetails?.patientId,
-        doctorId: selectedDoctor,
-        appointmentDate: formattedDate,
-        appointmentTime: formattedTime,
-        appointmentType: appointmentType === 'medication' ? 'Medication' : 'Appointment',
-        testTypeId: appointmentType === 'medication' ? selectedTestType : null,
-        isAnonymous: isAnonymous || false
-      };
-
-      // Debug log
-      console.log('Sending appointment data:', appointmentData);
-
-      // Validate required fields
-      if (!appointmentData.patientId) {
-        toast.error('Không thể xác định thông tin bệnh nhân. Vui lòng đăng nhập lại.', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+      const userDetails = getUserDetails();
+      if (!userDetails || !userDetails.userId) {
+        toast.error('Không thể lấy thông tin người dùng. Vui lòng đăng nhập lại.');
         navigate('/login');
         return;
       }
 
-      setLoading(true);
-      setError(null);
+      const formattedDate = formatDate(date);
+      const formattedTime = formatTime(time);
+
+      const appointmentData = {
+        patientId: userDetails.userId,
+        doctorId: selectedDoctor,
+        appointmentDate: formattedDate,
+        appointmentTime: formattedTime,
+        appointmentType: "Appointment",
+        testTypeId: selectedTestType,
+        isAnonymous: isAnonymous,
+        status: "Pending"
+      };
+
+      console.log('Sending appointment data:', appointmentData);
 
       const response = await axios.post(
         'http://localhost:8080/api/Appointment/Create',
@@ -230,70 +201,22 @@ const AppointmentsPage = () => {
         }
       );
 
-      // Debug log
-      console.log('API Response:', response.data);
-
       if (response.data.status) {
-        // Hiển thị toast thành công và đợi nó đóng trước khi chuyển hướng
-        await new Promise(resolve => {
-          toast.success('Đặt lịch thành công! Vui lòng chờ xác nhận từ bác sĩ.', {
-            position: "top-right",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            onClose: resolve
-          });
-        });
-        
-        // Chờ một chút để người dùng thấy thông báo
-        setTimeout(() => {
-          navigate('/appointments/list');
-        }, 2000);
+        toast.success('Đặt lịch hẹn thành công');
+        navigate('/appointments/list');
       } else {
-        toast.error(response.data.message || 'Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại.', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        toast.error(response.data.message || 'Không thể đặt lịch hẹn');
       }
     } catch (error) {
-      console.error('Error details:', error.response || error);
-
-      if (error.response?.data?.errors && error.response.data.errors.length > 0) {
-        toast.error(error.response.data.errors.join(', '), {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+      console.error('Error booking appointment:', error);
+      if (error.response?.status === 401) {
+        handleUnauthorized(navigate);
+      } else if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || 'Thời gian không hợp lệ. Vui lòng kiểm tra lại.';
+        toast.error(errorMessage);
       } else {
-        toast.error('Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại.', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        toast.error('Đã xảy ra lỗi khi đặt lịch hẹn');
       }
-    } finally {
-      setLoading(false);
     }
   };
 

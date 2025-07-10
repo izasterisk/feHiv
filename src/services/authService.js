@@ -1,3 +1,5 @@
+import { toast } from 'react-toastify';
+
 const API_URL = 'http://localhost:8080/api';
 
 export const login = async (username, password) => {
@@ -157,6 +159,29 @@ export const getUserDetails = () => {
 
 export const getUserRole = () => {
   return localStorage.getItem('userRole');
+};
+
+export const handleUnauthorized = (navigate) => {
+  logout();
+  navigate('/login');
+  toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+};
+
+export const isTokenExpired = () => {
+  const token = getToken();
+  if (!token) return true;
+  
+  try {
+    const tokenData = parseJwt(token);
+    if (!tokenData) return true;
+    
+    // exp is in seconds, current time is in milliseconds
+    const currentTime = Date.now() / 1000;
+    return tokenData.exp < currentTime;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true;
+  }
 };
 
 export const isAuthenticated = () => {

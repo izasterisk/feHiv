@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { getToken } from '../services/authService';
+import { getToken, isTokenExpired, handleUnauthorized } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const AppointmentListPage = () => {
+    const navigate = useNavigate();
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,14 +18,14 @@ const AppointmentListPage = () => {
     // Thêm object để map status từ tiếng Anh sang tiếng Việt
     const statusMapping = {
         'Scheduled': 'Đã lên lịch',
-        'Completed': 'Đã hoàn thành',
+        'Confirmed': 'Đã chấp nhận',
         'Cancelled': 'Đã hủy'
     };
 
     // Thêm object để map màu sắc cho từng status
     const statusColorMapping = {
         'Scheduled': 'bg-yellow-100 text-yellow-800',
-        'Completed': 'bg-green-100 text-green-800',
+        'Confirmed': 'bg-green-100 text-green-800',
         'Cancelled': 'bg-red-100 text-red-800'
     };
 
@@ -34,6 +36,11 @@ const AppointmentListPage = () => {
     const fetchAppointments = async () => {
         try {
             const token = getToken();
+            if (!token || isTokenExpired(token)) {
+                handleUnauthorized();
+                return;
+            }
+
             const userDetails = JSON.parse(localStorage.getItem('userDetails'));
             
             if (!userDetails?.patientId) {
@@ -57,7 +64,11 @@ const AppointmentListPage = () => {
             }
         } catch (error) {
             console.error('Error fetching appointments:', error);
-            setError('Đã xảy ra lỗi khi tải danh sách lịch hẹn');
+            if (error.response?.status === 401) {
+                handleUnauthorized();
+            } else {
+                setError('Đã xảy ra lỗi khi tải danh sách lịch hẹn');
+            }
         } finally {
             setLoading(false);
         }
@@ -168,7 +179,7 @@ const AppointmentListPage = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8" style={{ width: '81%' }}>
             <h1 className="text-2xl font-bold mb-6">Danh sách lịch hẹn</h1>
 
             {appointments.length === 0 ? (
@@ -216,12 +227,7 @@ const AppointmentListPage = () => {
                                         {appointment.status === 'Scheduled' && (
                                             <>
                                                 <button
-                                                    onClick={() => {
-                                                        setEditingAppointment(appointment);
-                                                        setShowEditModal(true);
-                                                        setNewDate(appointment.appointmentDate);
-                                                        setNewTime(appointment.appointmentTime.substring(0, 5));
-                                                    }}
+                                                    onClick={() => navigate(`/update-appointment/${appointment.appointmentId}`)}
                                                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                 >
                                                     Cập nhật
@@ -288,7 +294,7 @@ const AppointmentListPage = () => {
                                     onClick={() => handleUpdate(editingAppointment.appointmentId)}
                                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                                 >
-                                    Cập nhật
+                                    Cập nhật 
                                 </button>
                             </div>
                         </div>

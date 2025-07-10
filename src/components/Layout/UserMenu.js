@@ -85,6 +85,33 @@ const UserMenu = ({ user, onLogout }) => {
               Danh sách lịch hẹn
             </Link>
           )}
+          {user?.userRole === 'Doctor' && (
+            <Link
+              to="/appointments/management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Danh sách lịch hẹn
+            </Link>
+          )}
+          {user?.userRole === 'Admin' && (
+            <Link
+              to="/appointments/management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Danh sách lịch hẹn
+            </Link>
+          )}
+          {user?.userRole === 'Staff' && (
+            <Link
+              to="/appointments/management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Danh sách lịch hẹn
+            </Link>
+          )}
           <button
             onClick={() => {
               setIsOpen(false);

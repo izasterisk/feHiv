@@ -7,6 +7,8 @@ import VerifyPage from './pages/VerifyPage';
 import ProfilePage from './pages/ProfilePage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import AppointmentListPage from './pages/AppointmentListPage';
+import UpdateAppointmentPage from './pages/updateAppointmentPage';
+import AppointmentManager from './pages/AppointmentManager';
 import TestsPage from './pages/TestsPage';
 import TreatmentsPage from './pages/TreatmentsPage';
 import ArticlesPage from './pages/ArticlesPage';
@@ -65,6 +67,22 @@ function App() {
                         element={
                           <PrivateRoute>
                             <AppointmentListPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/appointments/management"
+                        element={
+                          <PrivateRoute>
+                            <AppointmentManager />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/update-appointment/:id"
+                        element={
+                          <PrivateRoute>
+                            <UpdateAppointmentPage />
                           </PrivateRoute>
                         }
                       />
