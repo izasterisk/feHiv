@@ -9,6 +9,7 @@ import AppointmentsPage from './pages/AppointmentsPage';
 import AppointmentListPage from './pages/AppointmentListPage';
 import UpdateAppointmentPage from './pages/updateAppointmentPage';
 import AppointmentManager from './pages/AppointmentManager';
+import TestResultPage from './pages/testResultPage';
 import TestsPage from './pages/TestsPage';
 import TreatmentsPage from './pages/TreatmentsPage';
 import ArticlesPage from './pages/ArticlesPage';
@@ -99,6 +100,14 @@ function App() {
                         element={
                           <PrivateRoute>
                             <TreatmentsPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/test-result/create"
+                        element={
+                          <PrivateRoute>
+                            <TestResultPage />
                           </PrivateRoute>
                         }
                       />

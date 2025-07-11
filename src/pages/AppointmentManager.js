@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 const AppointmentManager = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [testResults, setTestResults] = useState({});
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
@@ -39,7 +40,32 @@ const AppointmentManager = () => {
       });
 
       if (response.data.status) {
-        setAppointments(response.data.data);
+        const appointmentsData = response.data.data;
+        setAppointments(appointmentsData);
+        
+        // Fetch test results for each appointment
+        for (const appointment of appointmentsData) {
+          try {
+            const testResultsResponse = await axios.get(`http://localhost:8080/api/TestResult/GetAll`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            
+            if (testResultsResponse.data.status) {
+              const testResultsForAppointment = testResultsResponse.data.data.find(
+                tr => tr.appointmentId === appointment.appointmentId
+              );
+              
+              setTestResults(prev => ({
+                ...prev,
+                [appointment.appointmentId]: testResultsForAppointment
+              }));
+            }
+          } catch (error) {
+            console.error('Error fetching test results:', error);
+          }
+        }
       } else {
         toast.error('Không thể tải danh sách cuộc hẹn');
       }
@@ -74,6 +100,26 @@ const AppointmentManager = () => {
       console.error('Error updating appointment status:', error);
       toast.error('Đã xảy ra lỗi khi cập nhật trạng thái');
     }
+  };
+
+  const handleCreateTestResult = (appointmentId, patientId, doctorId) => {
+    navigate(`/test-result/create`, {
+      state: {
+        appointmentId,
+        patientId,
+        doctorId
+      }
+    });
+  };
+
+  const handleEditTestResult = (appointmentId, patientId, doctorId) => {
+    navigate(`/test-result/edit`, {
+      state: {
+        appointmentId,
+        patientId,
+        doctorId
+      }
+    });
   };
 
   const formatDateTime = (date, time) => {
@@ -193,6 +239,21 @@ const AppointmentManager = () => {
                       >
                         Hủy lịch
                       </button>
+                    </div>
+                  )}
+                  {appointment.status === 'Confirmed' && (
+                    <div className="space-x-2">
+                      {!testResults[appointment.appointmentId] && (
+                        <button
+                          onClick={() => handleCreateTestResult(appointment.appointmentId, appointment.patientId, appointment.doctorId)}
+                          className="text-blue-600 hover:text-blue-900 bg-blue-100 px-3 py-1 rounded flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                          Tạo kết quả khám
+                        </button>
+                      )}
                     </div>
                   )}
                 </td>
