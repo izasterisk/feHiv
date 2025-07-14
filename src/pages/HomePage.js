@@ -21,8 +21,13 @@ const HomePage = () => {
         const categoriesData = categoriesResponse.data?.data || [];
         const articlesData = articlesResponse.data?.data || [];
 
+        // Filter out inactive articles
+        const activeArticles = Array.isArray(articlesData) 
+          ? articlesData.filter(article => article.isActive === true)
+          : [];
+
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        setArticles(Array.isArray(articlesData) ? articlesData : []);
+        setArticles(activeArticles);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);

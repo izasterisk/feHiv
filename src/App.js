@@ -10,9 +10,16 @@ import AppointmentListPage from './pages/AppointmentListPage';
 import UpdateAppointmentPage from './pages/updateAppointmentPage';
 import AppointmentManager from './pages/AppointmentManager';
 import TestResultPage from './pages/testResultPage';
+import CategoryManager from './pages/categoryManager';
+import CreateCategory from './pages/createCategory';
+import UpdateCategory from './pages/updateCategory';
 import TestsPage from './pages/TestsPage';
+import ArticleManager from './pages/articleManager';
 import CreateTreatment from './pages/createTreatment';
 import StandardProtocol from './pages/standardProtocol';
+import ArticleDetail from './pages/articleDetail';
+import CreateArticle from './pages/createArticle';
+import UpdateArticle from './pages/updateArticle';
 import CreateRegimens from './pages/createRegimens';
 import ChooseRegiment from './pages/chooseRegiment';
 import ArticlesPage from './pages/ArticlesPage';
@@ -135,6 +142,62 @@ function App() {
                         element={
                           <PrivateRoute>
                             <CreateRegimens />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/categories"
+                        element={
+                          <PrivateRoute>
+                            <CategoryManager />
+                          </PrivateRoute>
+                        }
+                      />  
+                      <Route  
+                        path="/categories/create"
+                        element={
+                          <PrivateRoute>
+                            <CreateCategory />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/categories/update/:id"
+                        element={
+                          <PrivateRoute>
+                            <UpdateCategory />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/articles-management"
+                        element={
+                          <PrivateRoute>
+                            <ArticleManager />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/articles/:id"
+                        element={
+                          <PrivateRoute>
+                            <ArticleDetail />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/articles/create"
+                        element={
+                          <PrivateRoute>
+                            <CreateArticle />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/articles/update/:id"
+                        element={
+                          <PrivateRoute>
+                            <UpdateArticle />
                           </PrivateRoute>
                         }
                       />

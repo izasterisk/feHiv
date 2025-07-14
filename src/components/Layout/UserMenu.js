@@ -12,7 +12,7 @@ const UserMenu = ({ user, onLogout }) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false);
       }
-    }; 
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -41,9 +41,8 @@ const UserMenu = ({ user, onLogout }) => {
           {user?.fullName || user?.username}
         </span>
         <svg
-          className={`h-5 w-5 transition-transform duration-200 ${
-            isOpen ? 'transform rotate-180' : ''
-          }`}
+          className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''
+            }`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -96,20 +95,56 @@ const UserMenu = ({ user, onLogout }) => {
           )}
           {user?.userRole === 'Admin' && (
             <Link
-              to="/appointments/management"
+              to="/categories"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
               onClick={() => setIsOpen(false)}
             >
-              Danh sách lịch hẹn
+              Quản lý danh mục
+            </Link>
+          )}
+          {user?.userRole === 'Admin' && (
+            <Link
+              to="/articles-management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Quản lý bài viết
             </Link>
           )}
           {user?.userRole === 'Staff' && (
             <Link
-              to="/appointments/management"
+              to="/categories"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
               onClick={() => setIsOpen(false)}
             >
-              Danh sách lịch hẹn
+              Quản lý danh mục
+            </Link>
+          )}
+          {user?.userRole === 'Staff' && (
+            <Link
+              to="/articles-management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Quản lý bài viết
+            </Link>
+          )}
+          {user?.userRole === 'Manager' && (
+            <Link
+              to="/categories"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Quản lý danh mục
+            </Link>
+          )}
+          {user?.userRole === 'Manager' && (
+            <Link
+              to="/articles-management"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+              onClick={() => setIsOpen(false)}
+            >
+              Quản lý bài viết 
             </Link>
           )}
           <button
