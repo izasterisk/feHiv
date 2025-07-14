@@ -11,7 +11,10 @@ import UpdateAppointmentPage from './pages/updateAppointmentPage';
 import AppointmentManager from './pages/AppointmentManager';
 import TestResultPage from './pages/testResultPage';
 import TestsPage from './pages/TestsPage';
-import TreatmentsPage from './pages/TreatmentsPage';
+import CreateTreatment from './pages/createTreatment';
+import StandardProtocol from './pages/standardProtocol';
+import CreateRegimens from './pages/createRegimens';
+import ChooseRegiment from './pages/chooseRegiment';
 import ArticlesPage from './pages/ArticlesPage';
 import CategoryPage from './pages/CategoryPage';
 import PrivateRoute from './components/PrivateRoute';
@@ -96,10 +99,10 @@ function App() {
                         }
                       />
                       <Route
-                        path="/treatments/*"
+                        path="/treatments/create"
                         element={
                           <PrivateRoute>
-                            <TreatmentsPage />
+                            <CreateTreatment />
                           </PrivateRoute>
                         }
                       />
@@ -108,6 +111,30 @@ function App() {
                         element={
                           <PrivateRoute>
                             <TestResultPage />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/choose-regiment"
+                        element={
+                          <PrivateRoute>
+                            <ChooseRegiment />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/standard-protocol"
+                        element={
+                          <PrivateRoute>
+                            <StandardProtocol />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/regimens/create"
+                        element={
+                          <PrivateRoute>
+                            <CreateRegimens />
                           </PrivateRoute>
                         }
                       />

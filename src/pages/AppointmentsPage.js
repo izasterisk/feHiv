@@ -160,6 +160,12 @@ const AppointmentsPage = () => {
       return;
     }
 
+    // Validate appointment type and test type
+    if (appointmentType === 'medication' && !selectedTestType) {
+      toast.error('Vui lòng chọn loại xét nghiệm');
+      return;
+    }
+
     try {
       const token = getToken();
       if (!token || isTokenExpired(token)) {
@@ -177,13 +183,19 @@ const AppointmentsPage = () => {
       const formattedDate = formatDate(date);
       const formattedTime = formatTime(time);
 
+      // Validate date and time
+      if (!formattedDate || !formattedTime) {
+        toast.error('Thời gian không hợp lệ');
+        return;
+      }
+
       const appointmentData = {
-        patientId: userDetails.userId,
-        doctorId: selectedDoctor,
+        patientId: parseInt(userDetails.userId),
+        doctorId: parseInt(selectedDoctor),
         appointmentDate: formattedDate,
         appointmentTime: formattedTime,
-        appointmentType: "Appointment",
-        testTypeId: selectedTestType,
+        appointmentType: appointmentType === 'medication' ? 'Medication' : 'Appointment',
+        testTypeId: appointmentType === 'medication' ? parseInt(selectedTestType) : null,
         isAnonymous: isAnonymous,
         status: "Pending"
       };
@@ -209,11 +221,27 @@ const AppointmentsPage = () => {
       }
     } catch (error) {
       console.error('Error booking appointment:', error);
-      if (error.response?.status === 401) {
-        handleUnauthorized(navigate);
-      } else if (error.response?.status === 400) {
-        const errorMessage = error.response?.data?.message || 'Thời gian không hợp lệ. Vui lòng kiểm tra lại.';
-        toast.error(errorMessage);
+      
+      // Handle specific error cases
+      if (error.response) {
+        const status = error.response.status;
+        const errorMessage = error.response.data?.message;
+        
+        switch (status) {
+          case 401:
+            handleUnauthorized(navigate);
+            break;
+          case 400:
+            toast.error(errorMessage || 'Thời gian không hợp lệ. Vui lòng kiểm tra lại.');
+            break;
+          case 500:
+            toast.error('Lỗi máy chủ. Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
+            break;
+          default:
+            toast.error('Đã xảy ra lỗi khi đặt lịch hẹn. Vui lòng thử lại.');
+        }
+      } else if (error.request) {
+        toast.error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
       } else {
         toast.error('Đã xảy ra lỗi khi đặt lịch hẹn');
       }

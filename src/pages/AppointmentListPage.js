@@ -19,14 +19,16 @@ const AppointmentListPage = () => {
     const statusMapping = {
         'Scheduled': 'Đã lên lịch',
         'Confirmed': 'Đã chấp nhận',
-        'Cancelled': 'Đã hủy'
+        'Cancelled': 'Đã hủy',
+        'Completed': 'Đã hoàn thành'
     };
 
     // Thêm object để map màu sắc cho từng status
     const statusColorMapping = {
         'Scheduled': 'bg-yellow-100 text-yellow-800',
         'Confirmed': 'bg-green-100 text-green-800',
-        'Cancelled': 'bg-red-100 text-red-800'
+        'Cancelled': 'bg-red-100 text-red-800',
+        'Completed': 'bg-blue-100 text-blue-800'
     };
 
     useEffect(() => {
@@ -85,12 +87,7 @@ const AppointmentListPage = () => {
                 `http://localhost:8080/api/Appointment/Update`,
                 {
                     appointmentId: appointmentId,
-                    status: 'Cancelled',
-                    appointmentDate: null,
-                    appointmentTime: null,
-                    appointmentType: null,
-                    doctorId: null,
-                    testTypeId: null
+                    status: 'Cancelled'
                 },
                 {
                     headers: {
@@ -129,10 +126,7 @@ const AppointmentListPage = () => {
                 appointmentId: appointmentId,
                 appointmentDate: newDate,
                 appointmentTime: newTime + ':00',
-                status: 'Scheduled',
-                appointmentType: editingAppointment.appointmentType,
-                doctorId: editingAppointment.doctorId,
-                testTypeId: editingAppointment.testTypeId
+                status: 'Scheduled'
             };
 
             const response = await axios.put(

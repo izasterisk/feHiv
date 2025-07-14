@@ -95,16 +95,8 @@ const TestResultPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    if (!formData.testTypeId) {
-      toast.error('Vui lòng chọn loại xét nghiệm');
-      setLoading(false);
-      return;
-    }
-
     try {
       const token = localStorage.getItem('token');
-      
-      // Format data according to API requirements
       const submitData = {
         appointmentId: parseInt(formData.appointmentId),
         patientId: parseInt(formData.patientId),
@@ -114,8 +106,6 @@ const TestResultPage = () => {
         notes: formData.notes
       };
 
-      console.log('Submitting data:', submitData);
-
       const response = await axios.post('http://localhost:8080/api/TestResult/Create', submitData, {
         headers: {
           'Content-Type': 'application/json',
@@ -124,8 +114,32 @@ const TestResultPage = () => {
       });
 
       if (response.data.status) {
-        toast.success('Tạo kết quả khám thành công');
-        navigate('/appointments/management');
+        // Thêm đoạn code cập nhật trạng thái appointment thành Confirmed
+        try {
+          const updateResponse = await axios.put(
+            'http://localhost:8080/api/Appointment/Update',
+            {
+              appointmentId: formData.appointmentId,
+              status: 'Confirmed'  // Giữ nguyên trạng thái Confirmed
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
+
+          if (updateResponse.data.status) {
+            toast.success('Tạo kết quả khám thành công');
+            navigate('/appointments/management');
+          } else {
+            toast.error('Không thể cập nhật trạng thái cuộc hẹn');
+          }
+        } catch (updateError) {
+          console.error('Error updating appointment status:', updateError);
+          toast.error('Đã xảy ra lỗi khi cập nhật trạng thái cuộc hẹn');
+        }
       } else {
         toast.error(response.data.message || 'Không thể tạo kết quả khám');
       }
