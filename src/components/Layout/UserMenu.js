@@ -150,7 +150,7 @@ const UserMenu = ({ user, onLogout }) => {
               Quản lý loại khám
             </Link>
           )}
-          {user?.userRole === 'Admin' && (
+          {/* {user?.userRole === 'Admin' && (
             <Link
               to="/manager-management"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
@@ -158,7 +158,7 @@ const UserMenu = ({ user, onLogout }) => {
             >
               Quản lý Manager
             </Link>
-          )}
+          )} */}
           {user?.userRole === 'Admin' && (
             <Link
               to="/doctors-management"
