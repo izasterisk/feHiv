@@ -51,6 +51,8 @@ import CreateStaff from './pages/createStaff';
 import UpdateStaff from './pages/updateStaff';
 import TestResultManager from './pages/testResultManager';
 import UpdateTestResult from './pages/updateTestResult';
+import TreatmentForPatient from './pages/treatmentForPatient';
+import TestResultForPatient from './pages/testResultForPatient';
 
 function App() {
   return (
@@ -386,6 +388,22 @@ function App() {
                         element={
                           <PrivateRoute>
                             <UpdateTestResult />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/treatment-for-patient/:appointmentId"
+                        element={
+                          <PrivateRoute>
+                            <TreatmentForPatient />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/test-result-for-patient/:appointmentId"
+                        element={
+                          <PrivateRoute>
+                            <TestResultForPatient />
                           </PrivateRoute>
                         }
                       />

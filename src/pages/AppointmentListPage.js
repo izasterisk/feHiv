@@ -234,6 +234,22 @@ const AppointmentListPage = () => {
                                                 </button>
                                             </>
                                         )}
+                                        {appointment.status === 'Completed' && (
+                                            <>
+                                                <button
+                                                    onClick={() => navigate(`/treatment-for-patient/${appointment.appointmentId}`)}
+                                                    className="text-green-600 hover:text-green-900 mr-4"
+                                                >
+                                                    Xem phác đồ
+                                                </button>
+                                                <button
+                                                    onClick={() => navigate(`/test-result-for-patient/${appointment.appointmentId}`)}
+                                                    className="text-blue-600 hover:text-blue-900"
+                                                >
+                                                    Xem kết quả
+                                                </button>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
