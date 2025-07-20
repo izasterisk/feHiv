@@ -11,6 +11,7 @@ const TreatmentForPatient = () => {
     const [treatment, setTreatment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         fetchTreatmentDetails();
@@ -25,7 +26,7 @@ const TreatmentForPatient = () => {
             }
 
             const response = await axios.get(
-                'http://localhost:8080/api/Treatment/GetAll',
+                `${API_URL}/api/Treatment/GetAll`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`

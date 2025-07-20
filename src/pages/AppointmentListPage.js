@@ -14,6 +14,7 @@ const AppointmentListPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [newDate, setNewDate] = useState('');
     const [newTime, setNewTime] = useState('');
+    const API_URL = process.env.REACT_APP_API_URL;
 
     // Thêm object để map status từ tiếng Anh sang tiếng Việt
     const statusMapping = {
@@ -51,7 +52,7 @@ const AppointmentListPage = () => {
             }
 
             const response = await axios.get(
-                `http://localhost:8080/api/Appointment/GetByPatientId/${userDetails.patientId}`,
+                `${API_URL}/api/Appointment/GetByPatientId/${userDetails.patientId}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -84,7 +85,7 @@ const AppointmentListPage = () => {
         try {
             const token = getToken();
             const response = await axios.put(
-                `http://localhost:8080/api/Appointment/Update`,
+                `${API_URL}/api/Appointment/Update`,
                 {
                     appointmentId: appointmentId,
                     status: 'Cancelled'
@@ -130,7 +131,7 @@ const AppointmentListPage = () => {
             };
 
             const response = await axios.put(
-                `http://localhost:8080/api/Appointment/Update`,
+                `${API_URL}/api/Appointment/Update`,
                 updatedAppointment,
                 {
                     headers: {

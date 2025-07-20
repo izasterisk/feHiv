@@ -10,6 +10,7 @@ const TestResultForPatient = () => {
     const [testResult, setTestResult] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const API_URL = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         fetchTestResult();
@@ -24,7 +25,7 @@ const TestResultForPatient = () => {
             }
 
             const response = await axios.get(
-                'http://localhost:8080/api/TestResult/GetAll',
+                `${API_URL}/api/TestResult/GetAll`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`

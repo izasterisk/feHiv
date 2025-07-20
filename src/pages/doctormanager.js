@@ -9,13 +9,14 @@ const DoctorManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const API_URL = process.env.REACT_APP_API_URL;
 
   // Fetch doctors data
   const fetchDoctors = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        'http://localhost:8080/api/Doctor/GetAll',
+        `${API_URL}/api/Doctor/GetAll`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -64,7 +65,7 @@ const DoctorManager = () => {
         console.log('Sending update data:', updateData); // Log để debug
 
         const response = await axios.put(
-          'http://localhost:8080/api/Doctor/Update',
+          `${API_URL}/api/Doctor/Update`,
           updateData,
           {
             headers: {
