@@ -111,7 +111,7 @@ const VerifyPage = () => {
           <button
             onClick={() => {
               // Gửi lại mã xác thực
-              fetch('http://localhost:8080/api/Email/SendEmail', {
+              fetch(`${API_URL}/Email/SendEmail`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
