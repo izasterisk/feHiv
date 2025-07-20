@@ -53,6 +53,9 @@ import TestResultManager from './pages/testResultManager';
 import UpdateTestResult from './pages/updateTestResult';
 import TreatmentForPatient from './pages/treatmentForPatient';
 import TestResultForPatient from './pages/testResultForPatient';
+import ScheduleManager from './pages/scheduleManager';
+import CreateSchedule from './pages/createSchedule';
+import UpdateSchedule from './pages/updateSchedule';
 
 function App() {
   return (
@@ -404,6 +407,30 @@ function App() {
                         element={
                           <PrivateRoute>
                             <TestResultForPatient />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/schedule-manager"
+                        element={
+                          <PrivateRoute>
+                            <ScheduleManager />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/update-schedule/:scheduleId"
+                        element={
+                          <PrivateRoute>
+                            <UpdateSchedule />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/schedule/create"
+                        element={
+                          <PrivateRoute>
+                            <CreateSchedule />
                           </PrivateRoute>
                         }
                       />
