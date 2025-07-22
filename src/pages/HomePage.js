@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import CategoryList from '../components/HomePage/CategoryList';
 import ArticleList from '../components/HomePage/ArticleList';
 
-console.log('API URL:', process.env.REACT_APP_API_URL);
 const API_URL = `${process.env.REACT_APP_API_URL}/api`;
 
 const HomePage = () => {

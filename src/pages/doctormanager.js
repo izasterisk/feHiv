@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { FiPlus, FiEdit2, FiTrash2, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { RiCalendarScheduleLine } from 'react-icons/ri';
 
 const DoctorManager = () => {
   const [doctors, setDoctors] = useState([]);
@@ -166,6 +167,13 @@ const DoctorManager = () => {
                         className="text-red-600 hover:text-red-900"
                       >
                         <FiTrash2 className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => navigate(`/schedule-manager/${doctor.doctorId}`)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Xem lịch làm việc"
+                      >
+                        <RiCalendarScheduleLine className="w-5 h-5" />
                       </button>
                     </div>
                   </td>

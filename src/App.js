@@ -56,6 +56,7 @@ import TestResultForPatient from './pages/testResultForPatient';
 import ScheduleManager from './pages/scheduleManager';
 import CreateSchedule from './pages/createSchedule';
 import UpdateSchedule from './pages/updateSchedule';
+import ViewListWorkSchedule from './pages/viewListWorkSchedule';
 
 function App() {
   return (
@@ -411,7 +412,7 @@ function App() {
                         }
                       />
                       <Route
-                        path="/schedule-manager"
+                        path="/schedule-manager/:doctorId"
                         element={
                           <PrivateRoute>
                             <ScheduleManager />
@@ -427,10 +428,18 @@ function App() {
                         }
                       />
                       <Route
-                        path="/schedule/create"
+                        path="/schedule/create/:doctorId"
                         element={
                           <PrivateRoute>
                             <CreateSchedule />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/my-schedules"
+                        element={
+                          <PrivateRoute>
+                            <ViewListWorkSchedule />
                           </PrivateRoute>
                         }
                       />

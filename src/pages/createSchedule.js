@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
@@ -8,29 +8,69 @@ const API_URL = `${process.env.REACT_APP_API_URL}/api`;
 const CreateSchedule = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { doctorId: urlDoctorId } = useParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [doctorInfo, setDoctorInfo] = useState(null);
     const [formData, setFormData] = useState({
         workDay: 'Monday',
         startTime: '',
         endTime: ''
     });
 
-    // Kiểm tra và lấy doctorId từ localStorage khi component mount
-    React.useEffect(() => {
-        const userDetails = localStorage.getItem('userDetails');
-        if (!userDetails) {
-            navigate('/login');
-            return;
-        }
+    // Fetch thông tin bác sĩ nếu có doctorId từ URL
+    useEffect(() => {
+        const fetchDoctorInfo = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_URL}/Doctor/GetById/${urlDoctorId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+                if (data.status) {
+                    setDoctorInfo(data.data);
+                }
+            } catch (err) {
+                console.error('Error fetching doctor info:', err);
+                toast.error('Không thể tải thông tin bác sĩ');
+            }
+        };
 
-        const user = JSON.parse(userDetails);
-        if (!user.doctorId) {
+        if (urlDoctorId) {
+            fetchDoctorInfo();
+        }
+    }, [urlDoctorId]);
+
+    // Kiểm tra quyền truy cập
+    useEffect(() => {
+        const checkAccess = () => {
+            const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('userRole');
+            
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            // Nếu là admin/manager xem từ URL
+            if (['Admin', 'Manager'].includes(userRole) && urlDoctorId) {
+                return;
+            }
+
+            // Nếu là bác sĩ xem lịch của chính mình
+            if (userRole === 'Doctor' && user?.doctorId) {
+                return;
+            }
+
+            // Các trường hợp khác không có quyền truy cập
             toast.error('Bạn không có quyền truy cập trang này');
             navigate('/');
-            return;
-        }
-    }, [navigate]);
+        };
+
+        checkAccess();
+    }, [navigate, user, urlDoctorId]);
 
     const workDays = [
         { value: 'Monday', label: 'Thứ Hai' },
@@ -84,14 +124,12 @@ const CreateSchedule = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Kiểm tra đã chọn đủ thời gian chưa
+        
         if (!formData.startTime || !formData.endTime) {
             toast.error('Vui lòng chọn giờ bắt đầu và giờ kết thúc');
             return;
         }
 
-        // Kiểm tra giờ kết thúc phải sau giờ bắt đầu
         const startHour = parseInt(formData.startTime.split(':')[0]);
         const endHour = parseInt(formData.endTime.split(':')[0]);
         if (endHour <= startHour) {
@@ -104,20 +142,18 @@ const CreateSchedule = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const userDetails = localStorage.getItem('userDetails');
-
-            if (!token || !userDetails) {
+            if (!token) {
                 throw new Error('Vui lòng đăng nhập để tạo lịch làm việc');
             }
 
-            const user = JSON.parse(userDetails);
-            if (!user.doctorId) {
+            // Lấy doctorId từ URL hoặc từ user
+            const effectiveDoctorId = urlDoctorId || user?.doctorId;
+            if (!effectiveDoctorId) {
                 throw new Error('Không tìm thấy thông tin bác sĩ');
             }
 
-            // Format data theo yêu cầu của API
             const requestData = {
-                doctorId: Number(user.doctorId),
+                doctorId: Number(effectiveDoctorId),
                 workDay: formData.workDay,
                 startTime: formData.startTime + ':00',
                 endTime: formData.endTime + ':00'
@@ -147,12 +183,10 @@ const CreateSchedule = () => {
 
             if (response.ok) {
                 toast.success('Tạo lịch làm việc thành công');
-                navigate('/schedule-manager');
+                navigate(urlDoctorId ? `/schedule-manager/${urlDoctorId}` : '/schedule-manager');
             } else {
-                // Xử lý các loại lỗi cụ thể từ server
                 if (data.errors) {
                     if (data.errors.WorkDay) {
-                        toast.error('Bác sĩ đã có lịch làm việc vào ngày này');
                         throw new Error('Bác sĩ đã có lịch làm việc vào ngày này');
                     }
                     const errorMessages = Object.values(data.errors).flat().join(', ');
@@ -163,7 +197,7 @@ const CreateSchedule = () => {
         } catch (err) {
             console.error('Error creating schedule:', err);
             setError(err.message);
-            toast.error(err.message || 'Có lỗi xảy ra khi tạo lịch làm việc');
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
@@ -174,10 +208,23 @@ const CreateSchedule = () => {
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="bg-white rounded-lg shadow px-6 py-8">
                     <div className="mb-8">
-                        <h1 className="text-2xl font-semibold text-gray-900">Thêm lịch làm việc mới</h1>
-                        <p className="mt-2 text-sm text-gray-700">
-                            Tạo lịch làm việc cho bác sĩ {user?.fullName}
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-900">Thêm lịch làm việc mới</h1>
+                                <p className="mt-2 text-sm text-gray-700">
+                                    Tạo lịch làm việc cho bác sĩ {doctorInfo?.fullName || user?.fullName}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate(urlDoctorId ? `/schedule-manager/${urlDoctorId}` : '/schedule-manager')}
+                                className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                            >
+                                <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                Quay lại
+                            </button>
+                        </div>
                     </div>
 
                     {error && (
@@ -265,7 +312,7 @@ const CreateSchedule = () => {
                         <div className="flex justify-end space-x-3">
                             <button
                                 type="button"
-                                onClick={() => navigate('/schedule-manager')}
+                                onClick={() => navigate(urlDoctorId ? `/schedule-manager/${urlDoctorId}` : '/schedule-manager')}
                                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
                                 Hủy

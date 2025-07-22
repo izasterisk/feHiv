@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const API_URL = `${process.env.REACT_APP_API_URL}/api`;
@@ -8,11 +8,13 @@ const API_URL = `${process.env.REACT_APP_API_URL}/api`;
 const ScheduleManager = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { doctorId } = useParams(); // Lấy doctorId từ URL
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState(null);
+    const [doctorInfo, setDoctorInfo] = useState(null);
 
     // Chuyển đổi ngày trong tuần sang tiếng Việt
     const getDayInVietnamese = (day) => {
@@ -28,6 +30,24 @@ const ScheduleManager = () => {
         return dayMap[day] || day;
     };
 
+    // Fetch thông tin bác sĩ nếu có doctorId từ URL
+    const fetchDoctorInfo = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/Doctor/GetById/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (data.status) {
+                setDoctorInfo(data.data);
+            }
+        } catch (err) {
+            console.error('Error fetching doctor info:', err);
+        }
+    };
+
     const fetchSchedules = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -35,8 +55,23 @@ const ScheduleManager = () => {
                 throw new Error('Vui lòng đăng nhập để xem lịch làm việc');
             }
 
-            const doctorId = user.doctorId;
-            const response = await fetch(`${API_URL}/DoctorSchedule/GetByDoctorId/${doctorId}`, {
+            let endpoint;
+            // Xác định endpoint dựa vào role và doctorId
+            if (doctorId) {
+                // Nếu có doctorId từ URL (admin/manager xem lịch của bác sĩ cụ thể)
+                endpoint = `${API_URL}/DoctorSchedule/GetByDoctorId/${doctorId}`;
+                fetchDoctorInfo(doctorId);
+            } else if (user.role === 'Doctor' && user.doctorId) {
+                // Bác sĩ xem lịch của chính mình
+                endpoint = `${API_URL}/DoctorSchedule/GetByDoctorId/${user.doctorId}`;
+            } else if (['Admin', 'Manager'].includes(user.role)) {
+                // Admin/Manager xem tất cả lịch
+                endpoint = `${API_URL}/DoctorSchedule/GetAll`;
+            } else {
+                throw new Error('Bạn không có quyền truy cập trang này');
+            }
+
+            const response = await fetch(endpoint, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -66,10 +101,10 @@ const ScheduleManager = () => {
     };
 
     useEffect(() => {
-        if (user && user.doctorId) {
+        if (user) {
             fetchSchedules();
         }
-    }, [user]);
+    }, [user, doctorId]);
 
     const handleDelete = async () => {
         if (!selectedSchedule) return;
@@ -145,17 +180,24 @@ const ScheduleManager = () => {
                     <div className="sm:flex-auto">
                         <h1 className="text-2xl font-semibold text-gray-900">Lịch làm việc</h1>
                         <p className="mt-2 text-sm text-gray-700">
-                            Danh sách lịch làm việc trong tuần của bác sĩ {user?.fullName}
+                            {doctorInfo 
+                                ? `Danh sách lịch làm việc của bác sĩ ${doctorInfo.fullName}`
+                                : user.role === 'Doctor'
+                                    ? `Danh sách lịch làm việc của bác sĩ ${user?.fullName}`
+                                    : 'Danh sách lịch làm việc của tất cả bác sĩ'
+                            }
                         </p>
                     </div>
-                    <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                        <button
-                            onClick={() => navigate('/schedule/create')}
-                            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
-                        >
-                            Thêm lịch làm việc
-                        </button>
-                    </div>
+                    {(user.role === 'Doctor' || doctorId) && (
+                        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                            <button
+                                onClick={() => navigate(`/schedule/create/${doctorId}`)}
+                                className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto"
+                            >
+                                Thêm lịch làm việc
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-8 flex flex-col">

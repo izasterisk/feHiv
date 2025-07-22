@@ -127,7 +127,7 @@ const UpdateSchedule = () => {
 
       if (response.ok && data.status) {
         toast.success('Cập nhật lịch làm việc thành công');
-        navigate('/schedule-manager');
+        navigate(`/schedule-manager/${schedule.doctorId}`);
       } else {
         throw new Error(data.message || 'Không thể cập nhật lịch làm việc');
       }
@@ -154,7 +154,7 @@ const UpdateSchedule = () => {
         <div className="text-center">
           <h3 className="text-lg font-medium text-red-600 mb-4">{error}</h3>
           <button
-            onClick={() => navigate('/schedule-manager')}
+            onClick={() => navigate(`/schedule-manager/${schedule.doctorId}`)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             Quay lại
@@ -172,7 +172,7 @@ const UpdateSchedule = () => {
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-semibold text-gray-900">Cập nhật lịch làm việc</h1>
               <button
-                onClick={() => navigate('/schedule-manager')}
+                onClick={() => navigate(`/schedule-manager/${schedule.doctorId}`)}
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
