@@ -9,15 +9,17 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
+    fullName: '',
     email: '',
     phoneNumber: '',
-    fullName: '',
+    address: '',
     dateOfBirth: '',
     gender: 'Male',
-    address: '',
-    bloodType: 'A+',
-    isPregnant: false,
-    specialNotes: ''
+    identityCard: '',
+    bloodType: null,
+    isPregnant: null,
+    specialNotes: null
   });
 
   const handleChange = (e) => {
@@ -30,16 +32,29 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
+
+    // Validate form
+    if (formData.password !== formData.confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch(`${API_URL}/Patient/Create`, {
+      const response = await fetch(`${API_URL}/Auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          bloodType: null,
+          isPregnant: null,
+          specialNotes: null,
+          role: 'Patient'
+        }),
       });
 
       if (!response.ok) {
@@ -133,16 +148,16 @@ const RegisterPage = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email <span className="text-red-500">*</span>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                      Xác nhận mật khẩu <span className="text-red-500">*</span>
                     </label>
                     <input
-                      id="email"
-                      name="email"
-                      type="email"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
                       required
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                      value={formData.email}
+                      value={formData.confirmPassword}
                       onChange={handleChange}
                     />
                   </div>
@@ -152,15 +167,15 @@ const RegisterPage = () => {
               {/* Thông tin cá nhân */}
               <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Thông tin cá nhân</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                      Họ và tên <span className="text-red-500">*</span>
+                      Họ và tên
                     </label>
                     <input
+                      type="text"
                       id="fullName"
                       name="fullName"
-                      type="text"
                       required
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                       value={formData.fullName}
@@ -169,13 +184,28 @@ const RegisterPage = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                      Số điện thoại <span className="text-red-500">*</span>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email
                     </label>
                     <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                      Số điện thoại
+                    </label>
+                    <input
+                      type="tel"
                       id="phoneNumber"
                       name="phoneNumber"
-                      type="tel"
                       required
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                       value={formData.phoneNumber}
@@ -183,112 +213,57 @@ const RegisterPage = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
-                        Ngày sinh <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="dateOfBirth"
-                        name="dateOfBirth"
-                        type="date"
-                        required
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                        Giới tính <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        id="gender"
-                        name="gender"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                        value={formData.gender}
-                        onChange={handleChange}
-                      >
-                        <option value="Male">Nam</option>
-                        <option value="Female">Nữ</option>
-                      </select>
-                    </div>
-                  </div>
-
                   <div>
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                      Địa chỉ <span className="text-red-500">*</span>
+                      Địa chỉ
                     </label>
                     <input
+                      type="text"
                       id="address"
                       name="address"
-                      type="text"
                       required
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                       value={formData.address}
                       onChange={handleChange}
                     />
                   </div>
-                </div>
-              </div>
 
-              {/* Thông tin y tế */}
-              <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Thông tin y tế</h3>
-                <div className="space-y-4">
                   <div>
-                    <label htmlFor="bloodType" className="block text-sm font-medium text-gray-700">
-                      Nhóm máu
+                    <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                      Ngày sinh
+                    </label>
+                    <input
+                      type="date"
+                      id="dateOfBirth"
+                      name="dateOfBirth"
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                      Giới tính
                     </label>
                     <select
-                      id="bloodType"
-                      name="bloodType"
+                      id="gender"
+                      name="gender"
+                      required
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                      value={formData.bloodType}
+                      value={formData.gender}
                       onChange={handleChange}
                     >
-                      <option value="A+">A+</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B-">B-</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
-                      <option value="AB+">AB+</option>
-                      <option value="AB-">AB-</option>
+                      <option value="Male">Nam</option>
+                      <option value="Female">Nữ</option>
+                      <option value="Other">Khác</option>
                     </select>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      id="isPregnant"
-                      name="isPregnant"
-                      type="checkbox"
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      checked={formData.isPregnant}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="isPregnant" className="ml-2 block text-sm text-gray-900">
-                      Đang mang thai
-                    </label>
-                  </div>
-
-                  <div>
-                    <label htmlFor="specialNotes" className="block text-sm font-medium text-gray-700">
-                      Ghi chú đặc biệt
-                    </label>
-                    <textarea
-                      id="specialNotes"
-                      name="specialNotes"
-                      rows="3"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                      value={formData.specialNotes}
-                      onChange={handleChange}
-                      placeholder="Các bệnh nền, dị ứng, hoặc thông tin y tế quan trọng khác..."
-                    />
                   </div>
                 </div>
               </div>
+
+              {/* Removed medical information section */}
             </div>
 
             {error && (
@@ -339,4 +314,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage; 
+export default RegisterPage;
