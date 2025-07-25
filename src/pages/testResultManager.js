@@ -20,12 +20,24 @@ const TestResultManager = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const userDetails = JSON.parse(localStorage.getItem('userDetails'));
+      
+      if (!userDetails || !userDetails.doctorId) {
+        toast.error('Không thể xác thực thông tin bác sĩ');
+        navigate('/login');
+        return;
+      }
+
       const response = await axios.get(`${API_URL}/api/TestResult/GetAll`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.status) {
-        setTestResults(response.data.data);
+        // Lọc kết quả theo doctorId
+        const filteredResults = response.data.data.filter(
+          result => result.doctorId === userDetails.doctorId
+        );
+        setTestResults(filteredResults);
       } else {
         toast.error('Không thể tải danh sách kết quả xét nghiệm');
       }
@@ -57,7 +69,6 @@ const TestResultManager = () => {
     const searchString = searchTerm.toLowerCase();
     return (
       result.patientName?.toLowerCase().includes(searchString) ||
-      result.doctorName?.toLowerCase().includes(searchString) ||
       result.testTypeName?.toLowerCase().includes(searchString) ||
       result.resultValue?.toLowerCase().includes(searchString)
     );
@@ -84,7 +95,6 @@ const TestResultManager = () => {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bệnh nhân</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bác sĩ</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại xét nghiệm</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kết quả</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn vị</th>
@@ -99,7 +109,6 @@ const TestResultManager = () => {
                 <tr key={result.testResultId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{result.testResultId}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{result.patientName}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{result.doctorName}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{result.testTypeName}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                     <span className="font-medium text-blue-600">{result.resultValue}</span>
